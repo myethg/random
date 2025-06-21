@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>File Line Processor</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .upload-area {
+            border: 2px dashed #007bff;
+            border-radius: 10px;
+            padding: 40px;
+            text-align: center;
+            margin-bottom: 20px;
+            background: #f8f9fa;
+            transition: all 0.3s ease;
+        }
+        .upload-area:hover {
+            border-color: #0056b3;
+            background: #e3f2fd;
+        }
+        .upload-area.dragover {
+            border-color: #28a745;
+            background: #d4edda;
+        }
+        input[type="file"] {
+            display: none;
+        }
+        .upload-btn {
+            background: #007bff;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s;
+        }
+        .upload-btn:hover {
+            background: #0056b3;
+        }
+        .process-btn {
+            background: #28a745;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px;
+            transition: background-color 0.3s;
+        }
+        .process-btn:hover {
+            background: #218838;
+        }
+        .process-btn:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+        }
+        .download-btn {
+            background: #17a2b8;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px;
+            transition: background-color 0.3s;
+        }
+        .download-btn:hover {
+            background: #138496;
+        }
+        .results {
+            margin-top: 20px;
+        }
+        .stats {
+            background: #e9ecef;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 15px;
+        }
+        textarea {
+            width: 100%;
+            height: 300px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 10px;
+            font-family: monospace;
+            font-size: 14px;
+            resize: vertical;
+        }
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>File Line Processor</h1>
+        <p>Upload a text file to deduplicate lines and remove everything before (and including) the first single colon on each line. Double colons (::) and URL protocols (://) are ignored.</p>
+        
+        <div class="upload-area" id="uploadArea">
+            <p>Drag and drop a file here or click to select</p>
+            <button class="upload-btn" onclick="document.getElementById('fileInput').click()">Choose File</button>
+            <input type="file" id="fileInput" accept=".txt,.log,.csv,*" />
+        </div>
+        
+        <div id="fileInfo" class="hidden">
+            <p><strong>File:</strong> <span id="fileName"></span></p>
+            <button class="process-btn" onclick="processFile()">Process File</button>
+        </div>
+        
+        <div id="results" class="results hidden">
+            <div class="stats">
+                <strong>Processing Stats:</strong><br>
+                Original lines: <span id="originalCount">0</span><br>
+                After first deduplication: <span id="deduplicatedCount">0</span><br>
+                Final lines (after processing & second deduplication): <span id="finalCount">0</span>
+            </div>
+            
+            <h3>Processed Content:</h3>
+            <textarea id="output" readonly></textarea>
+            <br>
+            <button class="process-btn" onclick="selectAllAndCopy()">Select All & Copy</button>
+        </div>
+    </div>
+
+    <script>
+        let fileContent = '';
+        let processedContent = '';
+        let originalFileName = '';
+
+        // File input handling
+        document.getElementById('fileInput').addEventListener('change', handleFileSelect);
+        
+        // Drag and drop handling
+        const uploadArea = document.getElementById('uploadArea');
+        uploadArea.addEventListener('dragover', handleDragOver);
+        uploadArea.addEventListener('dragleave', handleDragLeave);
+        uploadArea.addEventListener('drop', handleDrop);
+
+        function handleFileSelect(event) {
+            const file = event.target.files[0];
+            if (file) {
+                readFile(file);
+            }
+        }
+
+        function handleDragOver(event) {
+            event.preventDefault();
+            uploadArea.classList.add('dragover');
+        }
+
+        function handleDragLeave(event) {
+            event.preventDefault();
+            uploadArea.classList.remove('dragover');
+        }
+
+        function handleDrop(event) {
+            event.preventDefault();
+            uploadArea.classList.remove('dragover');
+            const files = event.dataTransfer.files;
+            if (files.length > 0) {
+                readFile(files[0]);
+            }
+        }
+
+        function readFile(file) {
+            originalFileName = file.name;
+            const reader = new FileReader();
+            
+            reader.onload = function(e) {
+                fileContent = e.target.result;
+                document.getElementById('fileName').textContent = originalFileName;
+                document.getElementById('fileInfo').classList.remove('hidden');
+                document.getElementById('results').classList.add('hidden');
+            };
+            
+            reader.readAsText(file);
+        }
+
+        function processFile() {
+            if (!fileContent) {
+                alert('Please select a file first');
+                return;
+            }
+
+            // Split into lines and filter out empty lines
+            const originalLines = fileContent.split('\n').filter(line => line.trim() !== '');
+            
+            // First deduplication
+            const firstDeduplication = [...new Set(originalLines)];
+            
+            // Process each line: remove everything before and including the first single colon (ignore double colons and ://)
+            const processedLines = firstDeduplication.map(line => {
+                // Find single colons only, ignoring double colons and :// patterns
+                let colonIndex = -1;
+                for (let i = 0; i < line.length; i++) {
+                    if (line[i] === ':') {
+                        // Check if it's part of :// (like in https://)
+                        if (i < line.length - 2 && line.substring(i, i + 3) === '://') {
+                            continue; // Skip this colon as it's part of ://
+                        }
+                        // Check if it's part of a double colon ::
+                        if ((i > 0 && line[i-1] === ':') || (i < line.length - 1 && line[i+1] === ':')) {
+                            continue; // Skip this colon as it's part of ::
+                        }
+                        // This is a single colon, not part of :// or ::
+                        colonIndex = i;
+                        break;
+                    }
+                }
+                
+                if (colonIndex !== -1) {
+                    return line.substring(colonIndex + 1);
+                }
+                return line; // Return original line if no qualifying single colon found
+            }).filter(line => line.trim() !== ''); // Remove any lines that become empty after processing
+
+            // Second deduplication after processing
+            const finalDeduplication = [...new Set(processedLines)];
+
+            // Update stats
+            document.getElementById('originalCount').textContent = originalLines.length;
+            document.getElementById('deduplicatedCount').textContent = firstDeduplication.length;
+            document.getElementById('finalCount').textContent = finalDeduplication.length;
+
+            // Join processed lines
+            processedContent = finalDeduplication.join('\n');
+            
+            // Display results
+            document.getElementById('output').value = processedContent;
+            document.getElementById('results').classList.remove('hidden');
+        }
+
+        function selectAllAndCopy() {
+            const output = document.getElementById('output');
+            if (!output.value) {
+                alert('No processed content to copy');
+                return;
+            }
+
+            // Select all text in the textarea
+            output.select();
+            output.setSelectionRange(0, output.value.length);
+            
+            // Copy to clipboard
+            try {
+                document.execCommand('copy');
+                alert('Content copied to clipboard!');
+            } catch (err) {
+                // Fallback for modern browsers
+                navigator.clipboard.writeText(output.value).then(() => {
+                    alert('Content copied to clipboard!');
+                }).catch(() => {
+                    alert('Failed to copy. Please select the text manually and copy with Ctrl+C');
+                });
+            }
+        }
+    </script>
+</body>
+</html>
