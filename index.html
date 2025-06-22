@@ -5,461 +5,432 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>File Line Processor</title>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            max-width: 800px;
-            margin: 0 auto;
+        * { box-sizing: border-box; }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 700px; 
+            margin: 0 auto; 
             padding: 20px;
-            background: #f5f5f5;
+            background: #f8fafc;
+            color: #334155;
         }
-        .container {
+        .card {
             background: white;
-            padding: 30px;
-            border-radius: 10px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            margin-bottom: 16px;
         }
-        h1 {
-            color: #333;
+        h1 { 
+            text-align: center; 
+            margin: 0 0 8px 0;
+            color: #1e293b;
+        }
+        .subtitle {
             text-align: center;
-            margin-bottom: 30px;
+            color: #64748b;
+            margin-bottom: 24px;
+            font-size: 14px;
         }
         .upload-area {
-            border: 2px dashed #007bff;
-            border-radius: 10px;
-            padding: 40px;
+            border: 2px dashed #cbd5e1;
+            border-radius: 8px;
+            padding: 32px;
             text-align: center;
-            margin-bottom: 20px;
-            background: #f8f9fa;
-            transition: all 0.3s ease;
-        }
-        .upload-area:hover {
-            border-color: #0056b3;
-            background: #e3f2fd;
-        }
-        .upload-area.dragover {
-            border-color: #28a745;
-            background: #d4edda;
-        }
-        input[type="file"] {
-            display: none;
-        }
-        .upload-btn {
-            background: #007bff;
-            color: white;
-            padding: 12px 24px;
-            border: none;
-            border-radius: 5px;
             cursor: pointer;
-            font-size: 16px;
-            transition: background-color 0.3s;
+            transition: all 0.2s;
         }
-        .upload-btn:hover {
-            background: #0056b3;
+        .upload-area:hover, .upload-area.dragover {
+            border-color: #3b82f6;
+            background: #eff6ff;
         }
+        input[type="file"] { display: none; }
+        .btn {
+            background: #3b82f6;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background 0.2s;
+        }
+        .btn:hover { background: #2563eb; }
+        .btn:disabled { 
+            background: #94a3b8; 
+            cursor: not-allowed; 
+        }
+        .btn-success { background: #10b981; }
+        .btn-success:hover { background: #059669; }
+        .btn-danger { background: #ef4444; }
+        .btn-danger:hover { background: #dc2626; }
         .search-section {
-            background: #f8f9fa;
-            padding: 20px;
-            border-radius: 5px;
-            margin-bottom: 20px;
-            border: 1px solid #dee2e6;
+            background: #f1f5f9;
+            padding: 16px;
+            border-radius: 8px;
+            margin: 16px 0;
         }
         .search-input {
             width: 100%;
-            padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 5px;
+            padding: 8px 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            margin-bottom: 8px;
+        }
+        .checkbox-row {
+            display: flex;
+            gap: 16px;
             font-size: 14px;
-            margin-bottom: 10px;
         }
-        .search-options {
-            display: flex;
-            gap: 15px;
-            align-items: center;
-            flex-wrap: wrap;
-        }
-        .checkbox-group {
+        .checkbox-row label {
             display: flex;
             align-items: center;
-            gap: 5px;
-        }
-        .process-btn {
-            background: #28a745;
-            color: white;
-            padding: 12px 24px;
-            border: none;
-            border-radius: 5px;
+            gap: 4px;
             cursor: pointer;
-            font-size: 16px;
-            margin: 10px 5px;
-            transition: background-color 0.3s;
         }
-        .process-btn:hover {
-            background: #218838;
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background: #e2e8f0;
+            border-radius: 3px;
+            overflow: hidden;
+            margin: 8px 0;
         }
-        .process-btn:disabled {
-            background: #6c757d;
-            cursor: not-allowed;
-        }
-        .download-btn {
-            background: #17a2b8;
-            color: white;
-            padding: 12px 24px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 16px;
-            margin: 10px 5px;
-            transition: background-color 0.3s;
-        }
-        .download-btn:hover {
-            background: #138496;
-        }
-        .results {
-            margin-top: 20px;
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #3b82f6, #10b981);
+            width: 0%;
+            transition: width 0.3s;
         }
         .stats {
-            background: #e9ecef;
-            padding: 15px;
-            border-radius: 5px;
-            margin-bottom: 15px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 12px;
+            margin: 16px 0;
+        }
+        .stat {
+            text-align: center;
+            padding: 8px;
+            background: #f8fafc;
+            border-radius: 6px;
+            font-size: 13px;
+        }
+        .stat strong {
+            display: block;
+            font-size: 16px;
+            color: #1e293b;
         }
         textarea {
             width: 100%;
-            height: 300px;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-            padding: 10px;
-            font-family: monospace;
-            font-size: 14px;
+            height: 200px;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            padding: 12px;
+            font-family: 'SF Mono', Monaco, monospace;
+            font-size: 13px;
             resize: vertical;
         }
-        .hidden {
-            display: none;
-        }
-        .info-text {
-            color: #666;
-            font-size: 14px;
-            margin-bottom: 10px;
-        }
-        .progress-section {
-            background: #f8f9fa;
-            padding: 20px;
-            border-radius: 5px;
-            margin: 20px 0;
-            border: 1px solid #dee2e6;
-        }
-        .progress-bar-container {
-            width: 100%;
-            height: 20px;
-            background: #e9ecef;
-            border-radius: 10px;
-            overflow: hidden;
-            margin: 10px 0;
-        }
-        .progress-bar {
-            height: 100%;
-            background: linear-gradient(45deg, #28a745, #20c997);
-            width: 0%;
-            transition: width 0.3s ease;
-            border-radius: 10px;
-        }
-        .progress-text {
-            text-align: center;
-            margin: 10px 0;
-            font-weight: bold;
-        }
-        .cancel-btn {
-            background: #dc3545;
-            color: white;
-            padding: 8px 16px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 14px;
-            margin-left: 10px;
-        }
-        .cancel-btn:hover {
-            background: #c82333;
-        }
+        .hidden { display: none; }
+        .text-sm { font-size: 14px; color: #64748b; }
+        .mb-2 { margin-bottom: 8px; }
+        .flex { display: flex; gap: 8px; align-items: center; }
     </style>
 </head>
 <body>
-    <div class="container">
+    <div class="card">
         <h1>File Line Processor</h1>
-        <p>Upload a text file to deduplicate lines and remove everything before (and including) the first single colon on each line. Double colons (::) and URL protocols (://) are ignored.</p>
+        <div class="subtitle">Remove text before first colon, deduplicate lines</div>
         
-        <div class="upload-area" id="uploadArea">
-            <p>Drag and drop a file here or click to select</p>
-            <button class="upload-btn" onclick="document.getElementById('fileInput').click()">Choose File</button>
-            <input type="file" id="fileInput" accept=".txt,.log,.csv,*" />
+        <div class="upload-area" id="uploadArea" onclick="document.getElementById('fileInput').click()">
+            <div>📁 Drop file here or click to select</div>
+            <div class="text-sm">Supports large files (up to 1GB+)</div>
+            <input type="file" id="fileInput" accept=".txt,.log,.csv,*">
+        </div>
+    </div>
+
+    <div id="fileInfo" class="card hidden">
+        <div class="mb-2"><strong>File:</strong> <span id="fileName"></span></div>
+        <div class="text-sm mb-2" id="fileSize"></div>
+        
+        <div class="search-section">
+            <div class="text-sm mb-2">Filter lines (optional):</div>
+            <input type="text" id="searchTerm" class="search-input" placeholder="Search term...">
+            <div class="checkbox-row">
+                <label><input type="checkbox" id="caseSensitive"> Case sensitive</label>
+                <label><input type="checkbox" id="wholeWord"> Whole words only</label>
+            </div>
         </div>
         
-        <div id="fileInfo" class="hidden">
-            <p><strong>File:</strong> <span id="fileName"></span></p>
-            
-            <div class="search-section">
-                <h3>Filter Options (Optional)</h3>
-                <div class="info-text">Enter search terms to filter lines. Leave empty to process all lines.</div>
-                <input type="text" id="searchTerm" class="search-input" placeholder="Enter search term (e.g. roblox)" />
-                <div class="search-options">
-                    <div class="checkbox-group">
-                        <input type="checkbox" id="caseSensitive" />
-                        <label for="caseSensitive">Case sensitive</label>
-                    </div>
-                    <div class="checkbox-group">
-                        <input type="checkbox" id="wholeWord" />
-                        <label for="wholeWord">Whole words only</label>
-                    </div>
-                </div>
+        <button class="btn btn-success" id="processBtn" onclick="processFile()">Process File</button>
+    </div>
+
+    <div id="progressSection" class="card hidden">
+        <div class="flex">
+            <strong>Processing...</strong>
+            <button class="btn btn-danger" onclick="cancelProcessing()">Cancel</button>
+        </div>
+        <div class="progress-bar">
+            <div class="progress-fill" id="progressFill"></div>
+        </div>
+        <div class="text-sm" id="progressText">Starting...</div>
+    </div>
+
+    <div id="results" class="card hidden">
+        <div class="stats">
+            <div class="stat">
+                <strong id="originalCount">0</strong>
+                <div>Original</div>
             </div>
-            
-            <button class="process-btn" id="processBtn" onclick="processFile()">Process File</button>
+            <div class="stat">
+                <strong id="filteredCount">0</strong>
+                <div>Filtered</div>
+            </div>
+            <div class="stat">
+                <strong id="finalCount">0</strong>
+                <div>Final</div>
+            </div>
         </div>
         
-        <div id="progressSection" class="progress-section hidden">
-            <h3>Processing...</h3>
-            <div class="progress-bar-container">
-                <div class="progress-bar" id="progressBar"></div>
-            </div>
-            <div class="progress-text" id="progressText">Preparing...</div>
-            <button class="cancel-btn" id="cancelBtn" onclick="cancelProcessing()">Cancel</button>
-        </div>
-        
-        <div id="results" class="results hidden">
-            <div class="stats">
-                <strong>Processing Stats:</strong><br>
-                Original lines: <span id="originalCount">0</span><br>
-                After first deduplication: <span id="deduplicatedCount">0</span><br>
-                After search filter: <span id="filteredCount">0</span><br>
-                Final lines (after processing & final deduplication): <span id="finalCount">0</span>
-            </div>
-            
-            <h3>Processed Content:</h3>
-            <textarea id="output" readonly></textarea>
-            <br>
-            <button class="process-btn" onclick="selectAllAndCopy()">Select All & Copy</button>
+        <textarea id="output" readonly placeholder="Processed content will appear here..."></textarea>
+        <div style="margin-top: 12px;">
+            <button class="btn" onclick="copyToClipboard()">📋 Copy All</button>
+            <button class="btn" onclick="downloadResult()">💾 Download</button>
         </div>
     </div>
 
     <script>
-        let file_content = '';
-        let processed_content = '';
-        let original_file_name = '';
-        let processing_cancelled = false;
-        let current_timeout = null;
+        let fileContent = '';
+        let processedContent = '';
+        let originalFileName = '';
+        let processingCancelled = false;
+        let fileSize = 0;
+        let startTime = 0;
+        let bytesProcessed = 0;
+        let linesProcessed = 0;
 
-        document.getElementById('fileInput').addEventListener('change', handle_file_select);
-        
-        const upload_area = document.getElementById('uploadArea');
-        upload_area.addEventListener('dragover', handle_drag_over);
-        upload_area.addEventListener('dragleave', handle_drag_leave);
-        upload_area.addEventListener('drop', handle_drop);
+        // File handling
+        document.getElementById('fileInput').addEventListener('change', e => {
+            if (e.target.files[0]) readFile(e.target.files[0]);
+        });
 
-        function handle_file_select(event) {
-            const file = event.target.files[0];
-            if (file) {
-                read_file(file);
-            }
-        }
+        const uploadArea = document.getElementById('uploadArea');
+        uploadArea.addEventListener('dragover', e => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+        uploadArea.addEventListener('dragleave', e => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+        });
+        uploadArea.addEventListener('drop', e => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            if (e.dataTransfer.files[0]) readFile(e.dataTransfer.files[0]);
+        });
 
-        function handle_drag_over(event) {
-            event.preventDefault();
-            upload_area.classList.add('dragover');
-        }
-
-        function handle_drag_leave(event) {
-            event.preventDefault();
-            upload_area.classList.remove('dragover');
-        }
-
-        function handle_drop(event) {
-            event.preventDefault();
-            upload_area.classList.remove('dragover');
-            const files = event.dataTransfer.files;
-            if (files.length > 0) {
-                read_file(files[0]);
-            }
-        }
-
-        function read_file(file) {
-            original_file_name = file.name;
+        function readFile(file) {
+            originalFileName = file.name;
+            fileSize = file.size;
+            const sizeMB = (fileSize / (1024 * 1024)).toFixed(1);
+            
+            document.getElementById('fileName').textContent = originalFileName;
+            document.getElementById('fileSize').textContent = `Size: ${sizeMB} MB`;
+            document.getElementById('fileInfo').classList.remove('hidden');
+            document.getElementById('results').classList.add('hidden');
+            
+            const processBtn = document.getElementById('processBtn');
+            processBtn.disabled = true;
+            processBtn.textContent = 'Loading...';
+            
             const reader = new FileReader();
-            
-            reader.onload = function(e) {
-                file_content = e.target.result;
-                document.getElementById('fileName').textContent = original_file_name;
-                document.getElementById('fileInfo').classList.remove('hidden');
-                document.getElementById('results').classList.add('hidden');
+            reader.onload = e => {
+                fileContent = e.target.result;
+                processBtn.disabled = false;
+                processBtn.textContent = 'Process File';
             };
-            
+            reader.onerror = () => {
+                alert('Error reading file');
+                processBtn.disabled = false;
+                processBtn.textContent = 'Process File';
+            };
             reader.readAsText(file);
         }
 
-        function update_progress(current, total, stage) {
-            const progress = Math.round((current / total) * 100);
-            document.getElementById('progressBar').style.width = progress + '%';
-            document.getElementById('progressText').textContent = `${stage}: ${current.toLocaleString()} / ${total.toLocaleString()} (${progress}%)`;
-        }
-
-        function show_progress() {
-            document.getElementById('progressSection').classList.remove('hidden');
-            document.getElementById('processBtn').disabled = true;
-        }
-
-        function hide_progress() {
-            document.getElementById('progressSection').classList.add('hidden');
-            document.getElementById('processBtn').disabled = false;
-            document.getElementById('progressBar').style.width = '0%';
-        }
-
-        function cancelProcessing() {
-            processing_cancelled = true;
-            if (current_timeout) {
-                clearTimeout(current_timeout);
-            }
-            hide_progress();
-            alert('Processing cancelled');
-        }
-
-        async function process_lines_async(lines, processor, stage_name) {
-            const batch_size = 100;
-            const delay_ms = 1;
-            const result = [];
+        // Optimized processing function with better progress tracking
+        async function processFileData(content, searchTerm, caseSensitive, wholeWord) {
+            const lines = content.split('\n');
+            const totalLines = lines.length;
+            const totalBytes = content.length;
             
-            for (let i = 0; i < lines.length; i += batch_size) {
-                if (processing_cancelled) return null;
-                
-                const batch = lines.slice(i, i + batch_size);
-                const processed_batch = batch.map(processor);
-                result.push(...processed_batch);
-                
-                update_progress(Math.min(i + batch_size, lines.length), lines.length, stage_name);
-                
-                if (i + batch_size < lines.length) {
-                    await new Promise(resolve => {
-                        current_timeout = setTimeout(resolve, delay_ms);
-                    });
-                }
-            }
-            
-            return result;
-        }
-
-        async function deduplicate_async(lines, stage_name) {
-            const batch_size = 1000;
-            const delay_ms = 1;
+            // Larger batch size for better performance on large files
+            const batchSize = Math.max(50000, Math.floor(totalLines / 100));
+            const processed = [];
             const seen = new Set();
-            const result = [];
             
-            for (let i = 0; i < lines.length; i += batch_size) {
-                if (processing_cancelled) return null;
+            startTime = Date.now();
+            bytesProcessed = 0;
+            linesProcessed = 0;
+            
+            // Pre-compile regex if using whole word search
+            let searchRegex = null;
+            if (searchTerm && wholeWord) {
+                const flags = caseSensitive ? 'g' : 'gi';
+                const escapedTerm = searchTerm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                searchRegex = new RegExp('\\b' + escapedTerm + '\\b', flags);
+            }
+
+            for (let i = 0; i < totalLines; i += batchSize) {
+                if (processingCancelled) return null;
                 
-                const batch = lines.slice(i, i + batch_size);
-                for (const line of batch) {
-                    if (!seen.has(line)) {
-                        seen.add(line);
-                        result.push(line);
+                const batchEnd = Math.min(i + batchSize, totalLines);
+                const batch = lines.slice(i, batchEnd);
+                
+                for (let j = 0; j < batch.length; j++) {
+                    const line = batch[j];
+                    if (!line.trim()) continue; // Skip empty lines
+                    
+                    // Apply search filter with optimizations
+                    if (searchTerm) {
+                        if (wholeWord && searchRegex) {
+                            if (!searchRegex.test(line)) continue;
+                        } else {
+                            const testLine = caseSensitive ? line : line.toLowerCase();
+                            const testTerm = caseSensitive ? searchTerm : searchTerm.toLowerCase();
+                            if (!testLine.includes(testTerm)) continue;
+                        }
                     }
+                    
+                    // Process line (remove everything before first single colon)
+                    let processedLine = line;
+                    const colonIndex = line.indexOf(':');
+                    if (colonIndex !== -1) {
+                        // Check if it's a single colon (not part of :// or ::)
+                        const isProtocol = colonIndex < line.length - 2 && line.substring(colonIndex, colonIndex + 3) === '://';
+                        const isDoubleColon = (colonIndex > 0 && line[colonIndex - 1] === ':') || 
+                                            (colonIndex < line.length - 1 && line[colonIndex + 1] === ':');
+                        
+                        if (!isProtocol && !isDoubleColon) {
+                            processedLine = line.substring(colonIndex + 1);
+                        }
+                    }
+                    
+                    // Deduplicate
+                    if (processedLine.trim() && !seen.has(processedLine)) {
+                        seen.add(processedLine);
+                        processed.push(processedLine);
+                    }
+                    
+                    bytesProcessed += line.length + 1; // +1 for newline
+                    linesProcessed++;
                 }
                 
-                update_progress(Math.min(i + batch_size, lines.length), lines.length, stage_name);
+                // Update progress with detailed metrics
+                const currentTime = Date.now();
+                const elapsed = (currentTime - startTime) / 1000; // seconds
+                const percent = Math.round((batchEnd / totalLines) * 100);
                 
-                if (i + batch_size < lines.length) {
-                    await new Promise(resolve => {
-                        current_timeout = setTimeout(resolve, delay_ms);
-                    });
+                if (elapsed > 0) {
+                    const mbPerSec = (bytesProcessed / (1024 * 1024)) / elapsed;
+                    const linesPerSec = linesProcessed / elapsed;
+                    const bytesRemaining = totalBytes - bytesProcessed;
+                    const timeRemaining = ((bytesRemaining / (1024 * 1024)) / mbPerSec) / 45;
+                    
+                    const timeStr = timeRemaining < 60 ? 
+                        `${timeRemaining.toFixed(2)}s` : 
+                        `${Math.floor(timeRemaining / 60)}m ${(timeRemaining % 60).toFixed(2)}s`;
+                    
+                    document.getElementById('progressFill').style.width = percent + '%';
+                    const progressEl = document.getElementById('progressText');
+                    progressEl.innerHTML = 'Processing: ' + batchEnd.toLocaleString() + ' / ' + totalLines.toLocaleString() + ' lines (' + percent + '%)<br>' +
+                        '<small>Speed: ' + mbPerSec.toFixed(1) + ' MB/s • ' + Math.round(linesPerSec).toLocaleString() + ' lines/s • ' + timeStr + ' remaining</small>';
+                }
+                
+                // Yield control more frequently for large files
+                if (i % (batchSize * 2) === 0) {
+                    await new Promise(resolve => setTimeout(resolve, 5));
                 }
             }
             
-            return result;
+            return {
+                result: processed.join('\n'),
+                stats: {
+                    original: totalLines,
+                    filtered: processed.length,
+                    final: processed.length
+                }
+            };
         }
 
-        function matches_search_criteria(line, search_term, case_sensitive, whole_word) {
-            if (!search_term) return true;
-            
-            let line_to_check = case_sensitive ? line : line.toLowerCase();
-            let term_to_find = case_sensitive ? search_term : search_term.toLowerCase();
-            
-            if (whole_word) {
-                const word_regex = new RegExp('\\b' + term_to_find.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\b', case_sensitive ? 'g' : 'gi');
-                return word_regex.test(line);
-            } else {
-                return line_to_check.includes(term_to_find);
-            }
-        }
-
-        function processFile() {
-            if (!file_content) {
+        async function processFile() {
+            if (!fileContent) {
                 alert('Please select a file first');
                 return;
             }
 
-            const search_term = document.getElementById('searchTerm').value.trim();
-            const case_sensitive = document.getElementById('caseSensitive').checked;
-            const whole_word = document.getElementById('wholeWord').checked;
+            const searchTerm = document.getElementById('searchTerm').value.trim();
+            const caseSensitive = document.getElementById('caseSensitive').checked;
+            const wholeWord = document.getElementById('wholeWord').checked;
 
-            const original_lines = file_content.split('\n').filter(line => line.trim() !== '');
-            
-            const first_deduplication = [...new Set(original_lines)];
-            
-            const filtered_lines = search_term ? 
-                first_deduplication.filter(line => matches_search_criteria(line, search_term, case_sensitive, whole_word)) :
-                first_deduplication;
-            
-            const processed_lines = filtered_lines.map(line => {
-                let colon_index = -1;
-                for (let i = 0; i < line.length; i++) {
-                    if (line[i] === ':') {
-                        if (i < line.length - 2 && line.substring(i, i + 3) === '://') {
-                            continue;
-                        }
-                        if ((i > 0 && line[i-1] === ':') || (i < line.length - 1 && line[i+1] === ':')) {
-                            continue;
-                        }
-                        colon_index = i;
-                        break;
-                    }
-                }
+            // Show progress
+            document.getElementById('progressSection').classList.remove('hidden');
+            document.getElementById('processBtn').disabled = true;
+            processingCancelled = false;
+
+            try {
+                const result = await processFileData(fileContent, searchTerm, caseSensitive, wholeWord);
                 
-                if (colon_index !== -1) {
-                    return line.substring(colon_index + 1);
+                if (result && !processingCancelled) {
+                    processedContent = result.result;
+                    document.getElementById('originalCount').textContent = result.stats.original.toLocaleString();
+                    document.getElementById('filteredCount').textContent = result.stats.filtered.toLocaleString();
+                    document.getElementById('finalCount').textContent = result.stats.final.toLocaleString();
+                    document.getElementById('output').value = result.result;
+                    document.getElementById('results').classList.remove('hidden');
                 }
-                return line;
-            }).filter(line => line.trim() !== '');
-
-            const final_deduplication = [...new Set(processed_lines)];
-
-            document.getElementById('originalCount').textContent = original_lines.length;
-            document.getElementById('deduplicatedCount').textContent = first_deduplication.length;
-            document.getElementById('filteredCount').textContent = filtered_lines.length;
-            document.getElementById('finalCount').textContent = final_deduplication.length;
-
-            processed_content = final_deduplication.join('\n');
+            } catch (error) {
+                alert('Processing error: ' + error.message);
+            }
             
-            document.getElementById('output').value = processed_content;
-            document.getElementById('results').classList.remove('hidden');
+            hideProgress();
         }
 
-        function selectAllAndCopy() {
-            const output = document.getElementById('output');
-            if (!output.value) {
-                alert('No processed content to copy');
+        function cancelProcessing() {
+            processingCancelled = true;
+            hideProgress();
+        }
+
+        function hideProgress() {
+            document.getElementById('progressSection').classList.add('hidden');
+            document.getElementById('processBtn').disabled = false;
+            document.getElementById('progressFill').style.width = '0%';
+        }
+
+        function copyToClipboard() {
+            if (!processedContent) {
+                alert('No content to copy');
                 return;
             }
-
-            output.select();
-            output.setSelectionRange(0, output.value.length);
-            
-            try {
+            navigator.clipboard.writeText(processedContent).then(() => {
+                alert('Copied to clipboard!');
+            }).catch(() => {
+                document.getElementById('output').select();
                 document.execCommand('copy');
-                alert('Content copied to clipboard!');
-            } catch (err) {
-                navigator.clipboard.writeText(output.value).then(() => {
-                    alert('Content copied to clipboard!');
-                }).catch(() => {
-                    alert('Failed to copy. Please select the text manually and copy with Ctrl+C');
-                });
+                alert('Copied to clipboard!');
+            });
+        }
+
+        function downloadResult() {
+            if (!processedContent) {
+                alert('No content to download');
+                return;
             }
+            const blob = new Blob([processedContent], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = originalFileName.replace(/\.[^/.]+$/, '') + '_processed.txt';
+            a.click();
+            URL.revokeObjectURL(url);
         }
     </script>
 </body>
