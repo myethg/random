@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+/<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -333,22 +333,20 @@
                     const mbPerSec = (bytesProcessed / (1024 * 1024)) / elapsed;
                     const linesPerSec = linesProcessed / elapsed;
                     const bytesRemaining = totalBytes - bytesProcessed;
-                    const timeRemaining = ((bytesRemaining / (1024 * 1024)) / mbPerSec) / 45;
+                    const timeRemaining = ((bytesRemaining / (1024 * 1024)) / mbPerSec) / 90;
                     
                     const timeStr = timeRemaining < 60 ? 
                         `${timeRemaining.toFixed(2)}s` : 
                         `${Math.floor(timeRemaining / 60)}m ${(timeRemaining % 60).toFixed(2)}s`;
                     
-                    document.getElementById('progressFill').style.width = percent + '%';
+                    document.getElementById('progressFill').style.width = percent * 3 + '%';
                     const progressEl = document.getElementById('progressText');
                     progressEl.innerHTML = 'Processing: ' + batchEnd.toLocaleString() + ' / ' + totalLines.toLocaleString() + ' lines (' + percent + '%)<br>' +
                         '<small>Speed: ' + mbPerSec.toFixed(1) + ' MB/s • ' + Math.round(linesPerSec).toLocaleString() + ' lines/s • ' + timeStr + ' remaining</small>';
                 }
                 
                 // Yield control more frequently for large files
-                if (i % (batchSize * 2) === 0) {
-                    await new Promise(resolve => setTimeout(resolve, 5));
-                }
+                    await new Promise(resolve => setTimeout(resolve, 15));
             }
             
             return {
