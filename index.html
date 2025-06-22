@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>File Line Processor</title>
     <style>
@@ -327,7 +328,7 @@
                 // Update progress with detailed metrics
                 const currentTime = Date.now();
                 const elapsed = (currentTime - startTime) / 1000; // seconds
-                const percent = Math.round((batchEnd / totalLines) * 100);
+                const percent = Math.round((batchEnd / totalLines) * 600);
                 
                 if (elapsed > 0) {
                     const mbPerSec = (bytesProcessed / (1024 * 1024)) / elapsed;
@@ -339,14 +340,14 @@
                         `${timeRemaining.toFixed(2)}s` : 
                         `${Math.floor(timeRemaining / 60)}m ${(timeRemaining % 60).toFixed(2)}s`;
                     
-                    document.getElementById('progressFill').style.width = percent * 3 + '%';
+                    document.getElementById('progressFill').style.width = percent + '%';
                     const progressEl = document.getElementById('progressText');
                     progressEl.innerHTML = 'Processing: ' + batchEnd.toLocaleString() + ' / ' + totalLines.toLocaleString() + ' lines (' + percent + '%)<br>' +
                         '<small>Speed: ' + mbPerSec.toFixed(1) + ' MB/s • ' + Math.round(linesPerSec).toLocaleString() + ' lines/s • ' + timeStr + ' remaining</small>';
                 }
                 
                 // Yield control more frequently for large files
-                    await new Promise(resolve => setTimeout(resolve, 15));
+                    await new Promise(resolve => setTimeout(resolve, 50));
             }
             
             return {
