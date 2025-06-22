@@ -56,6 +56,32 @@
         .upload-btn:hover {
             background: #0056b3;
         }
+        .search-section {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            border: 1px solid #dee2e6;
+        }
+        .search-input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+        .search-options {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
         .process-btn {
             background: #28a745;
             color: white;
@@ -110,6 +136,51 @@
         .hidden {
             display: none;
         }
+        .info-text {
+            color: #666;
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+        .progress-section {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 5px;
+            margin: 20px 0;
+            border: 1px solid #dee2e6;
+        }
+        .progress-bar-container {
+            width: 100%;
+            height: 20px;
+            background: #e9ecef;
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(45deg, #28a745, #20c997);
+            width: 0%;
+            transition: width 0.3s ease;
+            border-radius: 10px;
+        }
+        .progress-text {
+            text-align: center;
+            margin: 10px 0;
+            font-weight: bold;
+        }
+        .cancel-btn {
+            background: #dc3545;
+            color: white;
+            padding: 8px 16px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-left: 10px;
+        }
+        .cancel-btn:hover {
+            background: #c82333;
+        }
     </style>
 </head>
 <body>
@@ -125,7 +196,33 @@
         
         <div id="fileInfo" class="hidden">
             <p><strong>File:</strong> <span id="fileName"></span></p>
-            <button class="process-btn" onclick="processFile()">Process File</button>
+            
+            <div class="search-section">
+                <h3>Filter Options (Optional)</h3>
+                <div class="info-text">Enter search terms to filter lines. Leave empty to process all lines.</div>
+                <input type="text" id="searchTerm" class="search-input" placeholder="Enter search term (e.g. roblox)" />
+                <div class="search-options">
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="caseSensitive" />
+                        <label for="caseSensitive">Case sensitive</label>
+                    </div>
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="wholeWord" />
+                        <label for="wholeWord">Whole words only</label>
+                    </div>
+                </div>
+            </div>
+            
+            <button class="process-btn" id="processBtn" onclick="processFile()">Process File</button>
+        </div>
+        
+        <div id="progressSection" class="progress-section hidden">
+            <h3>Processing...</h3>
+            <div class="progress-bar-container">
+                <div class="progress-bar" id="progressBar"></div>
+            </div>
+            <div class="progress-text" id="progressText">Preparing...</div>
+            <button class="cancel-btn" id="cancelBtn" onclick="cancelProcessing()">Cancel</button>
         </div>
         
         <div id="results" class="results hidden">
@@ -133,7 +230,8 @@
                 <strong>Processing Stats:</strong><br>
                 Original lines: <span id="originalCount">0</span><br>
                 After first deduplication: <span id="deduplicatedCount">0</span><br>
-                Final lines (after processing & second deduplication): <span id="finalCount">0</span>
+                After search filter: <span id="filteredCount">0</span><br>
+                Final lines (after processing & final deduplication): <span id="finalCount">0</span>
             </div>
             
             <h3>Processed Content:</h3>
@@ -144,52 +242,52 @@
     </div>
 
     <script>
-        let fileContent = '';
-        let processedContent = '';
-        let originalFileName = '';
+        let file_content = '';
+        let processed_content = '';
+        let original_file_name = '';
+        let processing_cancelled = false;
+        let current_timeout = null;
 
-        // File input handling
-        document.getElementById('fileInput').addEventListener('change', handleFileSelect);
+        document.getElementById('fileInput').addEventListener('change', handle_file_select);
         
-        // Drag and drop handling
-        const uploadArea = document.getElementById('uploadArea');
-        uploadArea.addEventListener('dragover', handleDragOver);
-        uploadArea.addEventListener('dragleave', handleDragLeave);
-        uploadArea.addEventListener('drop', handleDrop);
+        const upload_area = document.getElementById('uploadArea');
+        upload_area.addEventListener('dragover', handle_drag_over);
+        upload_area.addEventListener('dragleave', handle_drag_leave);
+        upload_area.addEventListener('drop', handle_drop);
 
-        function handleFileSelect(event) {
+        function handle_file_select(event) {
             const file = event.target.files[0];
             if (file) {
-                readFile(file);
+                read_file(file);
             }
         }
 
-        function handleDragOver(event) {
+        function handle_drag_over(event) {
             event.preventDefault();
-            uploadArea.classList.add('dragover');
+            upload_area.classList.add('dragover');
         }
 
-        function handleDragLeave(event) {
+        function handle_drag_leave(event) {
             event.preventDefault();
-            uploadArea.classList.remove('dragover');
+            upload_area.classList.remove('dragover');
         }
 
-        function handleDrop(event) {
+        function handle_drop(event) {
             event.preventDefault();
-            uploadArea.classList.remove('dragover');
+            upload_area.classList.remove('dragover');
             const files = event.dataTransfer.files;
             if (files.length > 0) {
-                readFile(files[0]);
+                read_file(files[0]);
             }
         }
 
-        function readFile(file) {
-            originalFileName = file.name;
+        function read_file(file) {
+            original_file_name = file.name;
             const reader = new FileReader();
             
             reader.onload = function(e) {
-                fileContent = e.target.result;
-                document.getElementById('fileName').textContent = originalFileName;
+                file_content = e.target.result;
+                document.getElementById('fileName').textContent = original_file_name;
                 document.getElementById('fileInfo').classList.remove('hidden');
                 document.getElementById('results').classList.add('hidden');
             };
@@ -197,57 +295,146 @@
             reader.readAsText(file);
         }
 
+        function update_progress(current, total, stage) {
+            const progress = Math.round((current / total) * 100);
+            document.getElementById('progressBar').style.width = progress + '%';
+            document.getElementById('progressText').textContent = `${stage}: ${current.toLocaleString()} / ${total.toLocaleString()} (${progress}%)`;
+        }
+
+        function show_progress() {
+            document.getElementById('progressSection').classList.remove('hidden');
+            document.getElementById('processBtn').disabled = true;
+        }
+
+        function hide_progress() {
+            document.getElementById('progressSection').classList.add('hidden');
+            document.getElementById('processBtn').disabled = false;
+            document.getElementById('progressBar').style.width = '0%';
+        }
+
+        function cancelProcessing() {
+            processing_cancelled = true;
+            if (current_timeout) {
+                clearTimeout(current_timeout);
+            }
+            hide_progress();
+            alert('Processing cancelled');
+        }
+
+        async function process_lines_async(lines, processor, stage_name) {
+            const batch_size = 100;
+            const delay_ms = 1;
+            const result = [];
+            
+            for (let i = 0; i < lines.length; i += batch_size) {
+                if (processing_cancelled) return null;
+                
+                const batch = lines.slice(i, i + batch_size);
+                const processed_batch = batch.map(processor);
+                result.push(...processed_batch);
+                
+                update_progress(Math.min(i + batch_size, lines.length), lines.length, stage_name);
+                
+                if (i + batch_size < lines.length) {
+                    await new Promise(resolve => {
+                        current_timeout = setTimeout(resolve, delay_ms);
+                    });
+                }
+            }
+            
+            return result;
+        }
+
+        async function deduplicate_async(lines, stage_name) {
+            const batch_size = 1000;
+            const delay_ms = 1;
+            const seen = new Set();
+            const result = [];
+            
+            for (let i = 0; i < lines.length; i += batch_size) {
+                if (processing_cancelled) return null;
+                
+                const batch = lines.slice(i, i + batch_size);
+                for (const line of batch) {
+                    if (!seen.has(line)) {
+                        seen.add(line);
+                        result.push(line);
+                    }
+                }
+                
+                update_progress(Math.min(i + batch_size, lines.length), lines.length, stage_name);
+                
+                if (i + batch_size < lines.length) {
+                    await new Promise(resolve => {
+                        current_timeout = setTimeout(resolve, delay_ms);
+                    });
+                }
+            }
+            
+            return result;
+        }
+            if (!search_term) return true;
+            
+            let line_to_check = case_sensitive ? line : line.toLowerCase();
+            let term_to_find = case_sensitive ? search_term : search_term.toLowerCase();
+            
+            if (whole_word) {
+                const word_regex = new RegExp('\\b' + term_to_find.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\b', case_sensitive ? 'g' : 'gi');
+                return word_regex.test(line);
+            } else {
+                return line_to_check.includes(term_to_find);
+            }
+        }
+
         function processFile() {
-            if (!fileContent) {
+            if (!file_content) {
                 alert('Please select a file first');
                 return;
             }
 
-            // Split into lines and filter out empty lines
-            const originalLines = fileContent.split('\n').filter(line => line.trim() !== '');
+            const search_term = document.getElementById('searchTerm').value.trim();
+            const case_sensitive = document.getElementById('caseSensitive').checked;
+            const whole_word = document.getElementById('wholeWord').checked;
+
+            const original_lines = file_content.split('\n').filter(line => line.trim() !== '');
             
-            // First deduplication
-            const firstDeduplication = [...new Set(originalLines)];
+            const first_deduplication = [...new Set(original_lines)];
             
-            // Process each line: remove everything before and including the first single colon (ignore double colons and ://)
-            const processedLines = firstDeduplication.map(line => {
-                // Find single colons only, ignoring double colons and :// patterns
-                let colonIndex = -1;
+            const filtered_lines = search_term ? 
+                first_deduplication.filter(line => matches_search_criteria(line, search_term, case_sensitive, whole_word)) :
+                first_deduplication;
+            
+            const processed_lines = filtered_lines.map(line => {
+                let colon_index = -1;
                 for (let i = 0; i < line.length; i++) {
                     if (line[i] === ':') {
-                        // Check if it's part of :// (like in https://)
                         if (i < line.length - 2 && line.substring(i, i + 3) === '://') {
-                            continue; // Skip this colon as it's part of ://
+                            continue;
                         }
-                        // Check if it's part of a double colon ::
                         if ((i > 0 && line[i-1] === ':') || (i < line.length - 1 && line[i+1] === ':')) {
-                            continue; // Skip this colon as it's part of ::
+                            continue;
                         }
-                        // This is a single colon, not part of :// or ::
-                        colonIndex = i;
+                        colon_index = i;
                         break;
                     }
                 }
                 
-                if (colonIndex !== -1) {
-                    return line.substring(colonIndex + 1);
+                if (colon_index !== -1) {
+                    return line.substring(colon_index + 1);
                 }
-                return line; // Return original line if no qualifying single colon found
-            }).filter(line => line.trim() !== ''); // Remove any lines that become empty after processing
+                return line;
+            }).filter(line => line.trim() !== '');
 
-            // Second deduplication after processing
-            const finalDeduplication = [...new Set(processedLines)];
+            const final_deduplication = [...new Set(processed_lines)];
 
-            // Update stats
-            document.getElementById('originalCount').textContent = originalLines.length;
-            document.getElementById('deduplicatedCount').textContent = firstDeduplication.length;
-            document.getElementById('finalCount').textContent = finalDeduplication.length;
+            document.getElementById('originalCount').textContent = original_lines.length;
+            document.getElementById('deduplicatedCount').textContent = first_deduplication.length;
+            document.getElementById('filteredCount').textContent = filtered_lines.length;
+            document.getElementById('finalCount').textContent = final_deduplication.length;
 
-            // Join processed lines
-            processedContent = finalDeduplication.join('\n');
+            processed_content = final_deduplication.join('\n');
             
-            // Display results
-            document.getElementById('output').value = processedContent;
+            document.getElementById('output').value = processed_content;
             document.getElementById('results').classList.remove('hidden');
         }
 
@@ -258,16 +445,13 @@
                 return;
             }
 
-            // Select all text in the textarea
             output.select();
             output.setSelectionRange(0, output.value.length);
             
-            // Copy to clipboard
             try {
                 document.execCommand('copy');
                 alert('Content copied to clipboard!');
             } catch (err) {
-                // Fallback for modern browsers
                 navigator.clipboard.writeText(output.value).then(() => {
                     alert('Content copied to clipboard!');
                 }).catch(() => {
