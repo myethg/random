@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Roblox Credential Parser</title>
+    <title>Credential Parser</title>
     <style>
         * { box-sizing: border-box; }
         body { 
@@ -138,8 +138,8 @@
 </head>
 <body>
     <div class="card">
-        <h1>Roblox Credential Parser</h1>
-        <div class="subtitle">Extract clean username:password from Roblox data</div>
+        <h1>Credential Parser</h1>
+        <div class="subtitle">Extract clean username:password from URL:username:password format</div>
         
         <div class="upload-area" id="uploadArea" onclick="document.getElementById('fileInput').click()">
             <div>📁 Drop file here or click to select</div>
@@ -298,31 +298,48 @@
                     let processed_line = '';
                     
                     if (line.includes('android://') && line.includes('@com.roblox.client/')) {
+                        const client_part = line.split('@com.roblox.client/')[1];
+                        if (client_part && client_part.startsWith(':')) {
+                            const creds = client_part.substring(1);
+                            const parts = creds.split(':');
+                            if (parts.length >= 2) {
+                                const username = parts[0];
+                                const password = parts.slice(1).join(':');
+                                processed_line = `${username}:${password}`;
+                            }
+                        }
+                    } else if (line.includes('android://') && line.includes('@') && line.includes('.client/')) {
+                        const client_split = line.split('.client/');
+                        if (client_split.length > 1) {
+                            const after_client = client_split[1];
+                            if (after_client.startsWith(':')) {
+                                const creds = after_client.substring(1);
+                                const parts = creds.split(':');
+                                if (parts.length >= 2) {
+                                    const username = parts[0];
+                                    const password = parts.slice(1).join(':');
+                                    processed_line = `${username}:${password}`;
+                                }
+                            }
+                        }
+                    } else if (line.includes('://')) {
                         const parts = line.split(':');
                         if (parts.length >= 3) {
                             const username = parts[parts.length - 2];
                             const password = parts[parts.length - 1];
                             processed_line = `${username}:${password}`;
+                        } else {
+                            processed_line = line;
                         }
-                    } else if (line.includes('https://www.roblox.com/') && line.includes('/login:')) {
-                        const login_part = line.split('/login:')[1];
-                        if (login_part) {
-                            processed_line = login_part;
-                        }
-                    } else if (line.includes(':') && !line.includes('://')) {
-                        processed_line = line;
                     } else {
-                        const colon_index = line.indexOf(':');
-                        if (colon_index !== -1) {
-                            const is_protocol = colon_index < line.length - 2 && line.substring(colon_index, colon_index + 3) === '://';
-                            const is_double_colon = (colon_index > 0 && line[colon_index - 1] === ':') || 
-                                                (colon_index < line.length - 1 && line[colon_index + 1] === ':');
-                            
-                            if (!is_protocol && !is_double_colon) {
-                                processed_line = line.substring(colon_index + 1);
-                            } else {
-                                processed_line = line;
-                            }
+                        const colon_count = (line.match(/:/g) || []).length;
+                        if (colon_count === 1) {
+                            processed_line = line;
+                        } else if (colon_count >= 2) {
+                            const parts = line.split(':');
+                            const username = parts[parts.length - 2];
+                            const password = parts[parts.length - 1];
+                            processed_line = `${username}:${password}`;
                         } else {
                             processed_line = line;
                         }
